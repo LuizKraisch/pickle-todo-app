@@ -1,103 +1,145 @@
-import Image from "next/image";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
+import type { DropResult } from "@hello-pangea/dnd";
+import { DragDropContext } from "@hello-pangea/dnd";
+
+import { fetchCharacters } from "./lib";
+import { Task, Character, ColumnsState } from "./types";
+import { AddTaskInput, AddTaskButton, Kanban } from "./components";
+import { PickleIcon } from "./assets";
+import { handleAdd } from "./hooks";
+
+const todoListColumns: ColumnsState = {
+  todo: { name: "Todo", items: [] },
+  doing: { name: "Doing", items: [] },
+  done: { name: "Done", items: [] },
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [columns, setColumns] = useState<ColumnsState>(todoListColumns);
+  const [title, setTitle] = useState("");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  // Load characters and tasks
+  useEffect(() => {
+    setIsLoading(true);
+    fetchCharacters().then(setCharacters);
+    const saved = localStorage.getItem("pickle-todo-tasks");
+    if (saved) {
+      setIsLoading(false);
+      setTasks(JSON.parse(saved));
+    }
+  }, []);
+
+  // Organize tasks after loading
+  useEffect(() => {
+    localStorage.setItem("pickle-todo-tasks", JSON.stringify(tasks));
+
+    const grouped: { [key: string]: Task[] } = {
+      todo: [],
+      doing: [],
+      done: [],
+    };
+
+    tasks.forEach((task: Task) => {
+      grouped[task.column]?.push(task);
+    });
+
+    setColumns({
+      todo: { name: "Todo", items: grouped.todo },
+      doing: { name: "Doing", items: grouped.doing },
+      done: { name: "Done", items: grouped.done },
+    });
+  }, [tasks]);
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    if (!destination) return;
+
+    const sourceColumn = columns[source.droppableId as keyof ColumnsState];
+    const destColumn = columns[destination.droppableId as keyof ColumnsState];
+    const sourceItems = [...sourceColumn.items];
+    const destItems = [...destColumn.items];
+    const [movedItem] = sourceItems.splice(source.index, 1);
+
+    if (source.droppableId === destination.droppableId) {
+      // Updates to avoid having dup keys on the same column
+      sourceItems.splice(destination.index, 0, movedItem);
+
+      setColumns((prev) => ({
+        ...prev,
+        [source.droppableId]: {
+          ...sourceColumn,
+          items: sourceItems,
+        },
+      }));
+    } else {
+      // Updates the columns accordingly
+      movedItem.column = destination.droppableId;
+      destItems.splice(destination.index, 0, movedItem);
+
+      setColumns((prev) => ({
+        ...prev,
+        [source.droppableId]: {
+          ...sourceColumn,
+          items: sourceItems,
+        },
+        [destination.droppableId]: {
+          ...destColumn,
+          items: destItems,
+        },
+      }));
+    }
+
+    // Update the moved task in the tasks state
+    setTasks((prev) =>
+      prev.map((t) => (t.id === movedItem.id ? { ...movedItem } : t))
+    );
+
+    if (
+      destination.droppableId === "done" &&
+      source.droppableId !== destination.droppableId
+    ) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.5, x: 0.8 },
+      });
+    }
+  };
+
+  return (
+    <div className="items-center p-8 pb-20 gap-16 pl-20 pr-20 pt-10">
+      <div className="flex space-x-2">
+        <PickleIcon />
+        <h1 className="text-2xl font-bold mb-5">Pickle Todo App</h1>
+      </div>
+      <div className="flex mb-4">
+        <AddTaskInput title={title} setTitle={setTitle} />
+        <AddTaskButton
+          title="Add Task"
+          handleAdd={() =>
+            handleAdd(title, characters, setTasks, setColumns, setTitle)
+          }
+        />
+      </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-3 gap-4 h-150">
+          {Object.entries(columns).map(([columnId, column]) => (
+            <Kanban
+              key={columnId}
+              columnId={columnId}
+              column={column}
+              isLoading={isLoading}
+              setTasks={setTasks}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </DragDropContext>
     </div>
   );
 }
