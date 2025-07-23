@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pickle Todo App
+
+A simple to-do app made with [Next.js](https://nextjs.org). The app is available [here](https://pickle-todo-app.vercel.app).
+
+<img width="1687" height="798" alt="Screenshot 2025-07-23 at 3 18 56 PM" src="https://github.com/user-attachments/assets/cc72f3d9-cffe-41f4-8eb9-78afc592f09b" />
+
+## Techonogies
+
+* Next.js - 15.4.2
+* React - 19.1.0
+* [@hello-pangea/dnd](https://github.com/hello-pangea/dnd) - 18.0.1
+* [canvas-confetti](https://github.com/catdad/canvas-confetti) - 1.9.3
+
+<hr>
 
 ## Getting Started
 
-First, run the development server:
+First, go to the folder and run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) with your browser to access the app.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+Tasks are generated using the Rick & Morty GRaphQL API to get characters from the show and assign them to the task. For that, the task stores the character reference inside it:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+<img width="990" height="538" alt="Screenshot 2025-07-23 at 3 58 24 PM" src="https://github.com/user-attachments/assets/8602d490-239e-4860-bb2b-13e51de3b02b" />
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All tasks and their current columns are being saved using local storage.
